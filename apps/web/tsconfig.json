@@ -11,6 +11,9 @@
     "moduleResolution": "bundler",
     "rootDir": "./src",
     "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "allowJs": true,
     "noEmit": true,
     "incremental": true,

@@ -27,3 +27,11 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+export type AppRole = 'SUPER_ADMIN' | 'CLINIC_ADMIN' | 'DOCTOR' | 'NURSE' | 'ASSISTANT' | 'READ_ONLY';
+
+export interface AuthenticatedUser {
+  userId: string;
+  role: AppRole;
+  clinicId: string;
+}

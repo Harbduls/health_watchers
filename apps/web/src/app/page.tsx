@@ -1,13 +1,8 @@
 export default function HomePage() {
   return (
-    <main style={{ fontFamily: "sans-serif", padding: "2rem" }}>
-      <h1>Health Watchers</h1>
-      <p>AI-assisted EMR powered by Stellar blockchain.</p>
-      <nav>
-        <a href="/patients">Patients</a> &nbsp;|&nbsp;
-        <a href="/encounters">Encounters</a> &nbsp;|&nbsp;
-        <a href="/payments">Payments</a>
-      </nav>
-    </main>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
+      <p className="text-gray-500">AI-assisted EMR powered by Stellar blockchain.</p>
+    </div>
   );
 }
