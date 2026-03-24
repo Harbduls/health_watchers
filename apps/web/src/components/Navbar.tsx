@@ -2,6 +2,10 @@ import { cookies } from "next/headers";
 import { useTranslations } from "next-intl";
 import { defaultLocale, type Locale } from "../../i18n";
 import NavbarClient from "./NavbarClient";
+import { useTranslations } from "next-intl";
+import { cookies } from "next/headers";
+import { defaultLocale, type Locale } from "../../i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Navbar() {
   const t = useTranslations("nav");
@@ -15,4 +19,23 @@ export default function Navbar() {
   ];
 
   return <NavbarClient links={links} locale={locale} />;
+  return (
+    <nav
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0.75rem 2rem",
+        borderBottom: "1px solid #ddd",
+        fontFamily: "sans-serif",
+      }}
+    >
+      <div style={{ display: "flex", gap: "1.5rem" }}>
+        <a href="/patients">{t("patients")}</a>
+        <a href="/encounters">{t("encounters")}</a>
+        <a href="/payments">{t("payments")}</a>
+      </div>
+      <LanguageSwitcher current={locale} />
+    </nav>
+  );
 }

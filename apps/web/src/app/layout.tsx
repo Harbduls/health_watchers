@@ -3,6 +3,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import Navbar from "../components/Navbar";
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, getLocale } from "next-intl/server";
+import Navbar from "../components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,6 +31,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div id="main-content" tabIndex={-1}>
             {children}
           </div>
+      <body>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Navbar />
+          {children}
         </NextIntlClientProvider>
     <html lang="en">
       <body className="min-h-screen bg-neutral-50 font-sans antialiased">

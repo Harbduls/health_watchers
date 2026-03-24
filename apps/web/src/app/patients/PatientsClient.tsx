@@ -78,6 +78,32 @@ export default function PatientsClient({ labels }: { labels: Labels }) {
             </table>
           </div>
         </>
+  if (loading) return <p style={{ padding: "2rem" }}>{labels.loading}</p>;
+
+  return (
+    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
+      <h1>{labels.title}</h1>
+      {patients.length === 0 ? (
+        <p>{labels.empty}</p>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              {[labels.id, labels.name, labels.dob].map((h) => (
+                <th key={h} style={{ border: "1px solid #ddd", padding: "8px" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {patients.map((p) => (
+              <tr key={p.id}>
+                <td style={{ border: "1px solid #ddd", padding: "8px" }}>{p.id}</td>
+                <td style={{ border: "1px solid #ddd", padding: "8px" }}>{p.name}</td>
+                <td style={{ border: "1px solid #ddd", padding: "8px" }}>{p.dob}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </main>
   );
