@@ -1,12 +1,38 @@
 import bcrypt from 'bcryptjs';
 import { Request, Response, Router } from 'express';
+import { TOTP } from 'otpauth';
+import qrcode from 'qrcode';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { LoginDto, RefreshDto, loginSchema, refreshSchema } from './auth.validation';
+import { authenticate } from '@api/middlewares/auth.middleware';
+import {
+  LoginDto, RefreshDto, loginSchema, refreshSchema,
+  mfaVerifySchema, mfaChallengeSchema, MfaVerifyDto, MfaChallengeDto,
+} from './auth.validation';
 import { UserModel } from './models/user.model';
 import {
   signAccessToken, signRefreshToken, signTempToken,
   verifyRefreshToken, verifyTempToken,
 } from './token.service';
+
+// ── TOTP helpers ──────────────────────────────────────────────────────────
+function generateSecret(): string {
+  return new TOTP({ issuer: 'HealthWatchers', label: 'user', algorithm: 'SHA1', digits: 6, period: 30 }).secret.base32;
+}
+
+function generateURI({ label, issuer, secret }: { label: string; issuer: string; secret: string }): string {
+  const totp = new TOTP({ issuer, label, algorithm: 'SHA1', digits: 6, period: 30, secret });
+  return totp.toString();
+}
+
+async function totpVerify({ token, secret }: { token: string; secret: string }): Promise<{ valid: boolean }> {
+  const totp = new TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret });
+  const delta = totp.validate({ token, window: 1 });
+  return { valid: delta !== null };
+}
+
+// ── Local request types ───────────────────────────────────────────────────
+type LoginReq   = Request<Record<string, never>, unknown, LoginDto>;
+type RefreshReq = Request<Record<string, never>, unknown, RefreshDto>;
 
 const router = Router();
 const INVALID = 'Invalid email or password';
