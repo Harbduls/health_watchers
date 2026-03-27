@@ -1,15 +1,18 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, model, models } from 'mongoose';
 
 const paymentRecordSchema = new Schema(
   {
-    patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
-    clinicId:  { type: Schema.Types.ObjectId, ref: "Clinic", required: true },
-    amount:    { type: String, required: true },
-    status:    { type: String, enum: ["pending", "confirmed", "failed"], default: "pending" },
-    txHash:    { type: String },
+    intentId:    { type: String, required: true, unique: true },
+    amount:      { type: String, required: true },
+    destination: { type: String, required: true },
+    memo:        { type: String },
+    status:      { type: String, enum: ['pending', 'confirmed', 'failed'], default: 'pending' },
+    txHash:      { type: String },
+    clinicId:    { type: String, required: true, index: true },
+    patientId:   { type: String, index: true },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true }
 );
 
 export const PaymentRecordModel =
-  models.PaymentRecord || model("PaymentRecord", paymentRecordSchema);
+  models.PaymentRecord || model('PaymentRecord', paymentRecordSchema);

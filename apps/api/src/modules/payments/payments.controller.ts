@@ -1,45 +1,44 @@
-import { Router, Request, Response } from "express";
-import { PaymentRecordModel } from "./models/payment-record.model";
-import { emitToClinic } from "../../realtime/socket";
-import { authenticate } from "../../middlewares/auth.middleware";
+import { Router, Request, Response } from 'express';
+import { PaymentRecordModel } from './models/payment-record.model';
+import { toPaymentResponse } from './payments.transformer';
 
-export const paymentRoutes = Router();
+const router = Router();
 
-// GET /api/v1/payments
-paymentRoutes.get("/", authenticate, async (req: Request, res: Response) => {
+// GET /payments
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const payments = await PaymentRecordModel.find({ clinicId }).sort({ createdAt: -1 }).lean();
-    return res.json({ status: "success", data: payments });
+    const docs = await PaymentRecordModel.find().sort({ createdAt: -1 });
+    return res.json({ status: 'success', data: docs.map(toPaymentResponse) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// POST /api/v1/payments
-paymentRoutes.post("/", authenticate, async (req: Request, res: Response) => {
+// GET /payments/:id
+router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const payment = await PaymentRecordModel.create({ ...req.body, clinicId });
-    return res.status(201).json({ status: "success", data: payment });
+    const doc = await PaymentRecordModel.findById(req.params.id);
+    if (!doc) return res.status(404).json({ error: 'NotFound', message: 'Payment not found' });
+    return res.json({ status: 'success', data: toPaymentResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// PATCH /api/v1/payments/:id/confirm
-paymentRoutes.patch("/:id/confirm", authenticate, async (req: Request, res: Response) => {
+// POST /payments/intent
+router.post('/intent', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const payment = await PaymentRecordModel.findOneAndUpdate(
-      { _id: req.params.id, clinicId },
-      { status: "confirmed", txHash: req.body.txHash },
-      { new: true }
-    ).lean();
-    if (!payment) return res.status(404).json({ error: "Not found" });
-    emitToClinic(clinicId, "payment:confirmed", payment);
-    return res.json({ status: "success", data: payment });
+    const { intentId, amount, destination, memo, clinicId, patientId } = req.body;
+    const doc = await PaymentRecordModel.create({
+      intentId, amount, destination, memo,
+      clinicId: clinicId || 'default',
+      patientId,
+      status: 'pending',
+    });
+    return res.status(201).json({ status: 'success', data: toPaymentResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(400).json({ error: 'BadRequest', message: err.message });
   }
 });
+
+export const paymentRoutes = router;

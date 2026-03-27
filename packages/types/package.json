@@ -1,0 +1,7 @@
+{
+  "name": "@health-watchers/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and interfaces for Health Watchers monorepo",
+  "license": "MIT",
+  "main": "index.ts"
+}

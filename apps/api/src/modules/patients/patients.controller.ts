@@ -1,73 +1,92 @@
-import { Router, Request, Response } from "express";
-import { PatientModel } from "./patient.model";
-import { emitToClinic } from "../../realtime/socket";
-import { authenticate } from "../../middlewares/auth.middleware";
+import { Router, Request, Response } from 'express';
+import { PatientModel } from './models/patient.model';
+import { PatientCounterModel } from './models/patient-counter.model';
+import { toPatientResponse } from './patients.transformer';
 
-export const patientRoutes = Router();
+const router = Router();
 
-// GET /api/v1/patients
-patientRoutes.get("/", authenticate, async (req: Request, res: Response) => {
+async function nextSystemId(clinicId: string): Promise<string> {
+  const counter = await PatientCounterModel.findOneAndUpdate(
+    { _id: `patient_${clinicId}` },
+    { $inc: { value: 1 } },
+    { new: true, upsert: true }
+  );
+  return `P-${counter!.value}`;
+}
+
+// GET /patients
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const patients = await PatientModel.find({ clinicId }).sort({ createdAt: -1 }).lean();
-    return res.json({ status: "success", data: patients });
+    const docs = await PatientModel.find({ isActive: true }).sort({ createdAt: -1 });
+    return res.json({ status: 'success', data: docs.map(toPatientResponse) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// GET /api/v1/patients/search
-patientRoutes.get("/search", authenticate, async (req: Request, res: Response) => {
+// GET /patients/search?q=
+router.get('/search', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const q = String(req.query.q || "");
-    const patients = await PatientModel.find({
-      clinicId,
-      fullName: { $regex: q, $options: "i" },
-    }).lean();
-    return res.json({ status: "success", data: patients });
+    const q = String(req.query.q || '').toLowerCase().trim();
+    const docs = await PatientModel.find({
+      isActive: true,
+      searchName: { $regex: q, $options: 'i' },
+    }).sort({ createdAt: -1 });
+    return res.json({ status: 'success', data: docs.map(toPatientResponse) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// GET /api/v1/patients/:id
-patientRoutes.get("/:id", authenticate, async (req: Request, res: Response) => {
+// GET /patients/:id
+router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const patient = await PatientModel.findOne({ _id: req.params.id, clinicId }).lean();
-    if (!patient) return res.status(404).json({ error: "Not found" });
-    return res.json({ status: "success", data: patient });
+    const doc = await PatientModel.findById(req.params.id);
+    if (!doc) return res.status(404).json({ error: 'NotFound', message: 'Patient not found' });
+    return res.json({ status: 'success', data: toPatientResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// POST /api/v1/patients
-patientRoutes.post("/", authenticate, async (req: Request, res: Response) => {
+// POST /patients
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const patient = await PatientModel.create({ ...req.body, clinicId });
-    emitToClinic(clinicId, "patient:created", patient);
-    return res.status(201).json({ status: "success", data: patient });
+    const { firstName, lastName, dateOfBirth, sex, contactNumber, address, clinicId } = req.body;
+    const searchName = `${firstName} ${lastName}`.toLowerCase();
+    const systemId = await nextSystemId(clinicId || 'default');
+    const doc = await PatientModel.create({
+      systemId, firstName, lastName,
+      dateOfBirth: new Date(dateOfBirth),
+      sex, contactNumber, address,
+      clinicId: clinicId || 'default',
+      isActive: true,
+      searchName,
+    });
+    return res.status(201).json({ status: 'success', data: toPatientResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(400).json({ error: 'BadRequest', message: err.message });
   }
 });
 
-// PATCH /api/v1/patients/:id
-patientRoutes.patch("/:id", authenticate, async (req: Request, res: Response) => {
+// PUT /patients/:id
+router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const patient = await PatientModel.findOneAndUpdate(
-      { _id: req.params.id, clinicId },
-      req.body,
-      { new: true }
-    ).lean();
-    if (!patient) return res.status(404).json({ error: "Not found" });
-    emitToClinic(clinicId, "patient:updated", patient);
-    return res.json({ status: "success", data: patient });
+    const { firstName, lastName, dateOfBirth, sex, contactNumber, address } = req.body;
+    const update: Record<string, any> = { contactNumber, address, sex };
+    if (firstName) { update.firstName = firstName; }
+    if (lastName)  { update.lastName  = lastName;  }
+    if (firstName || lastName) {
+      update.searchName = `${firstName || ''} ${lastName || ''}`.toLowerCase().trim();
+    }
+    if (dateOfBirth) update.dateOfBirth = new Date(dateOfBirth);
+
+    const doc = await PatientModel.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!doc) return res.status(404).json({ error: 'NotFound', message: 'Patient not found' });
+    return res.json({ status: 'success', data: toPatientResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(400).json({ error: 'BadRequest', message: err.message });
   }
 });
+
+export const patientRoutes = router;

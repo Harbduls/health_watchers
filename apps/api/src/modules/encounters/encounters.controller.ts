@@ -1,58 +1,49 @@
-import { Router, Request, Response } from "express";
-import { EncounterModel } from "./encounter.model";
-import { emitToClinic } from "../../realtime/socket";
-import { authenticate } from "../../middlewares/auth.middleware";
+import { Router, Request, Response } from 'express';
+import { EncounterModel } from './encounter.model';
+import { toEncounterResponse } from './encounters.transformer';
 
-export const encounterRoutes = Router();
+const router = Router();
 
-// GET /api/v1/encounters
-encounterRoutes.get("/", authenticate, async (req: Request, res: Response) => {
+// GET /encounters
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const encounters = await EncounterModel.find({ clinicId }).sort({ createdAt: -1 }).lean();
-    return res.json({ status: "success", data: encounters });
+    const docs = await EncounterModel.find().sort({ createdAt: -1 });
+    return res.json({ status: 'success', data: docs.map(toEncounterResponse) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// GET /api/v1/encounters/:id
-encounterRoutes.get("/:id", authenticate, async (req: Request, res: Response) => {
+// GET /encounters/patient/:patientId
+router.get('/patient/:patientId', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const encounter = await EncounterModel.findOne({ _id: req.params.id, clinicId }).lean();
-    if (!encounter) return res.status(404).json({ error: "Not found" });
-    return res.json({ status: "success", data: encounter });
+    const docs = await EncounterModel.find({ patientId: req.params.patientId }).sort({ createdAt: -1 });
+    return res.json({ status: 'success', data: docs.map(toEncounterResponse) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// POST /api/v1/encounters
-encounterRoutes.post("/", authenticate, async (req: Request, res: Response) => {
+// GET /encounters/:id
+router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const encounter = await EncounterModel.create({ ...req.body, clinicId });
-    emitToClinic(clinicId, "encounter:created", encounter);
-    return res.status(201).json({ status: "success", data: encounter });
+    const doc = await EncounterModel.findById(req.params.id);
+    if (!doc) return res.status(404).json({ error: 'NotFound', message: 'Encounter not found' });
+    return res.json({ status: 'success', data: toEncounterResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'InternalError', message: err.message });
   }
 });
 
-// PATCH /api/v1/encounters/:id
-encounterRoutes.patch("/:id", authenticate, async (req: Request, res: Response) => {
+// POST /encounters
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const { clinicId } = (req as any).user;
-    const encounter = await EncounterModel.findOneAndUpdate(
-      { _id: req.params.id, clinicId },
-      req.body,
-      { new: true }
-    ).lean();
-    if (!encounter) return res.status(404).json({ error: "Not found" });
-    emitToClinic(clinicId, "encounter:updated", encounter);
-    return res.json({ status: "success", data: encounter });
+    const { patientId, clinicId, chiefComplaint, notes } = req.body;
+    const doc = await EncounterModel.create({ patientId, clinicId, chiefComplaint, notes });
+    return res.status(201).json({ status: 'success', data: toEncounterResponse(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(400).json({ error: 'BadRequest', message: err.message });
   }
 });
+
+export const encounterRoutes = router;

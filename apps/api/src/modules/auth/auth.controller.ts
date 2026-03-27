@@ -1,12 +1,22 @@
 import bcrypt from 'bcryptjs';
+import qrcode from 'qrcode';
 import { Request, Response, Router } from 'express';
 import { validateRequest } from '@api/middlewares/validate.middleware';
-import { LoginDto, RefreshDto, loginSchema, refreshSchema } from './auth.validation';
+import { authenticate } from '@api/middlewares/auth.middleware';
+import {
+  LoginDto, RefreshDto,
+  loginSchema, refreshSchema, mfaVerifySchema, mfaChallengeSchema,
+  MfaVerifyDto, MfaChallengeDto,
+} from './auth.validation';
 import { UserModel } from './models/user.model';
 import {
   signAccessToken, signRefreshToken, signTempToken,
   verifyRefreshToken, verifyTempToken,
 } from './token.service';
+import { generateSecret, generateURI, totpVerify } from './totp.service';
+
+type LoginReq   = Request<Record<string, never>, unknown, LoginDto>;
+type RefreshReq = Request<Record<string, never>, unknown, RefreshDto>;
 
 const router = Router();
 const INVALID = 'Invalid email or password';
