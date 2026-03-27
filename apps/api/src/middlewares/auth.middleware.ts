@@ -1,54 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { config } from '@health-watchers/config';
-import { JwtPayload } from '../types/express';
+import { verifyAccessToken } from '@api/modules/auth/token.service';
 
-/**
- * Middleware to authenticate requests using JWT
- */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'No token provided',
-    });
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Missing or invalid Authorization header' });
   }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, config.jwt.accessTokenSecret) as JwtPayload;
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Invalid or expired token',
-    });
+  const token = header.slice(7);
+  const payload = verifyAccessToken(token);
+  if (!payload) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or expired token' });
   }
+  req.user = payload as typeof req.user;
+  return next();
 }
 
-/**
- * Middleware to check if user has required role
- */
-export function requireRole(...roles: string[]) {
+export function requireRoles(...roles: AppRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Authentication required',
-      });
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Insufficient permissions' });
     }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Insufficient permissions',
-      });
-    }
-
-    next();
+    return next();
   };
 }

@@ -1,34 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema } from 'zod';
 
-interface ValidationSchemas {
+interface ValidateOptions {
   body?: ZodSchema;
   query?: ZodSchema;
   params?: ZodSchema;
 }
 
-/**
- * Middleware to validate request data using Zod schemas
- */
-export function validateRequest(schemas: ValidationSchemas) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (schemas.body) {
-        req.body = schemas.body.parse(req.body);
+export function validateRequest(schemas: ValidateOptions) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    for (const [key, schema] of Object.entries(schemas) as [keyof ValidateOptions, ZodSchema][]) {
+      const result = schema.safeParse(req[key]);
+      if (!result.success) {
+        res.status(400).json({
+          error: 'ValidationError',
+          message: result.error.errors.map((e) => e.message).join(', '),
+          issues: result.error.issues,
+        });
+        return;
       }
-      if (schemas.query) {
-        req.query = schemas.query.parse(req.query);
-      }
-      if (schemas.params) {
-        req.params = schemas.params.parse(req.params);
-      }
-      next();
-    } catch (error: any) {
-      return res.status(400).json({
-        error: 'ValidationError',
-        message: 'Invalid request data',
-        details: error.errors || error.message,
-      });
+      (req as Record<string, unknown>)[key] = result.data;
     }
+    next();
   };
 }
