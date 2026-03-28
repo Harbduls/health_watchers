@@ -24,15 +24,15 @@ async function nextSystemId(clinicId: string): Promise<string> {
   return `HW-${short}-${padded}`;
 }
 
-// GET /patients?page=1&limit=20&clinicId=
+// GET /patients?page=1&limit=20&isActive=true
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const pagination = parsePagination(req.query as Record<string, any>);
   if (!pagination) {
     return res.status(400).json({ error: 'ValidationError', message: 'limit must not exceed 100' });
   }
   const { page, limit } = pagination;
-  const filter: Record<string, any> = { isActive: true };
-  if (req.query.clinicId) filter.clinicId = req.query.clinicId;
+  const isActive = req.query.isActive === 'false' ? false : true;
+  const filter: Record<string, any> = { clinicId: req.user!.clinicId, isActive };
 
   const result = await paginate(PatientModel, filter, page, limit);
   return res.json({ status: 'success', data: result.data.map(toPatientResponse), meta: result.meta });
