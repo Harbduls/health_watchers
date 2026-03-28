@@ -25,17 +25,17 @@ export const passwordSchema = z
   .refine((p) => /[^A-Za-z0-9]/.test(p), 'Password must contain at least one special character')
   .refine((p) => !COMMON_PASSWORDS.has(p), 'Password is too common');
 
-export const loginSchema = z.object({
-  email:    z.string().email(),
-  password: z.string().min(1, 'Password is required'),
-});
-
 export const registerSchema = z.object({
   fullName: z.string().min(1),
   email:    z.string().email(),
   password: passwordSchema,
   role:     z.enum(['SUPER_ADMIN', 'CLINIC_ADMIN', 'DOCTOR', 'NURSE', 'ASSISTANT', 'READ_ONLY']),
   clinicId: z.string().min(1),
+});
+
+export const loginSchema = z.object({
+  email:    z.string().email(),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export const refreshSchema = z.object({

@@ -14,7 +14,6 @@ import {
   signAccessToken, signRefreshToken, signTempToken,
   verifyRefreshToken, verifyTempToken,
 } from './token.service';
-import { generateSecret, generateURI, totpVerify } from './totp.service';
 
 // ── local type helpers ────────────────────────────────────────────────────
 type LoginReq   = Request<Record<string, never>, unknown, LoginDto>;
@@ -84,13 +83,8 @@ router.post('/register', authenticate, validateRequest({ body: registerSchema })
     clinicId: req.body.clinicId,
   });
 
-  const p = { userId: user.id, role: user.role, clinicId: String(user.clinicId) };
-  const accessToken  = signAccessToken(p);
-  const refreshToken = signRefreshToken(p);
-
-  await UserModel.findByIdAndUpdate(user.id, { refreshTokenHash: hashToken(refreshToken) });
-
-  return res.status(201).json({ status: 'success', data: { accessToken, refreshToken } });
+  const { password: _pw, ...sanitized } = user.toObject();
+  return res.status(201).json({ status: 'success', data: sanitized });
 });
 
 /**
@@ -155,7 +149,6 @@ router.post('/login', validateRequest({ body: loginSchema }), async (req: LoginR
   const accessToken  = signAccessToken(p);
   const refreshToken = signRefreshToken(p);
 
-  // Store hashed refresh token
   await UserModel.findByIdAndUpdate(user.id, { refreshTokenHash: hashToken(refreshToken) });
 
   return res.json({ status: 'success', data: { accessToken, refreshToken } });
@@ -191,7 +184,6 @@ router.post('/refresh', validateRequest({ body: refreshSchema }), async (req: Re
 
   const incomingHash = hashToken(req.body.refreshToken);
 
-  // Token reuse detected — possible theft: invalidate all tokens
   if (!user.refreshTokenHash || user.refreshTokenHash !== incomingHash) {
     await UserModel.findByIdAndUpdate(user.id, { refreshTokenHash: undefined });
     return res.status(401).json({ error: 'Unauthorized', message: 'Refresh token reuse detected' });
@@ -201,7 +193,6 @@ router.post('/refresh', validateRequest({ body: refreshSchema }), async (req: Re
   const accessToken  = signAccessToken(p);
   const refreshToken = signRefreshToken(p);
 
-  // Rotate: store new hash, invalidate old
   await UserModel.findByIdAndUpdate(user.id, { refreshTokenHash: hashToken(refreshToken) });
 
   return res.json({ status: 'success', data: { accessToken, refreshToken } });
@@ -215,9 +206,6 @@ router.post('/refresh', validateRequest({ body: refreshSchema }), async (req: Re
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Logged out successfully
  */
 router.post('/logout', authenticate, async (req: Request, res: Response) => {
   await UserModel.findByIdAndUpdate(req.user!.userId, { refreshTokenHash: undefined });
@@ -325,22 +313,6 @@ router.post('/unlock', authenticate, async (req: Request, res: Response) => {
   await user.save();
 
   return res.json({ status: 'success', data: { unlocked: true, email: user.email } });
-});
-
-// POST /auth/register
-router.post('/register', validateRequest({ body: registerSchema }), async (req: Request<Record<string, never>, unknown, RegisterDto>, res: Response) => {
-  const { fullName, email, password, role, clinicId } = req.body;
-
-  const clinic = await ClinicModel.findById(clinicId);
-  if (!clinic || !clinic.isActive) {
-    return res.status(404).json({ error: 'ClinicNotFound', message: 'Clinic not found' });
-  }
-
-  const existing = await UserModel.findOne({ email: email.toLowerCase().trim() });
-  if (existing) return res.status(409).json({ error: 'Conflict', message: 'Email already registered' });
-
-  const user = await UserModel.create({ fullName, email, password, role, clinicId });
-  return res.status(201).json({ status: 'success', data: { id: user.id, email: user.email, role: user.role } });
 });
 
 export const authRoutes = router;
