@@ -16,8 +16,9 @@ import {
 } from "@/components/forms/PaymentIntentForm";
 import { Button } from "@/components/ui/Button";
 import { queryKeys } from "@/lib/queryKeys";
+import { API_URL } from "@/lib/api";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+const API = `${API_URL}/api/v1`;
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? "testnet";
 
 export default function PaymentsClient() {
