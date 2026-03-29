@@ -18,8 +18,17 @@ const auditLogSchema = new Schema<AuditLog>({
   resourceId: { type: String, required: true },
   format:     { type: String, required: true },
   clinicId:   { type: String, required: true, index: true },
-  timestamp:  { type: Date,   required: true, default: () => new Date() },
+  timestamp:  { type: Date,   required: true, default: () => new Date(), immutable: true },
   ip:         { type: String },
-}, { versionKey: false });
+}, {
+  versionKey: false,
+  // Immutability: prevent updates and deletes at the schema level
+  strict: true,
+});
+
+// Block any update/replace operations to enforce immutability
+auditLogSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate', 'replaceOne'] as any, function () {
+  throw new Error('AuditLog records are immutable and cannot be modified');
+});
 
 export const AuditLogModel = models.AuditLog || model<AuditLog>('AuditLog', auditLogSchema);
