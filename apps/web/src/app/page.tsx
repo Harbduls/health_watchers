@@ -3,8 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useQuery } from '@tanstack/react-query';
 import { StatCard } from '@/components/dashboard/StatCard';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { API_V1 } from '@/lib/api';
 
 interface DashboardStats {
   todayPatients: number;
@@ -14,7 +13,7 @@ interface DashboardStats {
 }
 
 async function fetchDashboardStats(): Promise<DashboardStats> {
-  const res = await fetch(`${API_URL}/api/v1/dashboard/stats`, {
+  const res = await fetch(`${API_V1}/dashboard/stats`, {
     credentials: 'include',
   });
   

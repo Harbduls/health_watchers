@@ -1,10 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-const API_V1 = API_BASE_URL.endsWith('/api/v1')
-  ? API_BASE_URL
-  : `${API_BASE_URL.replace(/\/$/, '')}/api/v1`;
+import { API_V1 } from '@/lib/api';
 
 export interface Payment {
   id: string;
