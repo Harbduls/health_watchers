@@ -38,6 +38,7 @@ export interface Encounter {
   prescriptions?: Prescription[];
   followUpDate?: Date;
   aiSummary?: string;
+  isActive?: boolean;
 }
 
 const vitalSignsSchema = new Schema<VitalSigns>(
@@ -86,6 +87,7 @@ const encounterSchema = new Schema<Encounter>(
     prescriptions:     { type: [prescriptionSchema], default: undefined },
     followUpDate:      { type: Date },
     aiSummary:         { type: String },
+    isActive:          { type: Boolean, default: true, index: true },
   },
   { timestamps: true, versionKey: false }
 );

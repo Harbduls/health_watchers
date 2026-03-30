@@ -64,6 +64,17 @@ export const updateEncounterSchema = createEncounterSchema.partial().refine(
   'At least one field is required',
 );
 
+export const patchEncounterSchema = z.object({
+  chiefComplaint: z.string().min(3, 'chiefComplaint must be at least 3 characters').optional(),
+  notes: z.string().max(5000).optional(),
+  aiSummary: z.string().max(5000).optional(),
+  diagnosis: z.array(diagnosisSchema).optional(),
+  treatmentPlan: z.string().max(5000).optional(),
+}).refine(
+  (d) => Object.keys(d).length > 0,
+  'At least one field is required',
+);
+
 export const listEncountersQuerySchema = z.object({
   patientId: objectId.optional(),
   doctorId: objectId.optional(),
@@ -78,4 +89,5 @@ export const listEncountersQuerySchema = z.object({
 
 export type CreateEncounterDto = z.infer<typeof createEncounterSchema>;
 export type UpdateEncounterDto = z.infer<typeof updateEncounterSchema>;
+export type PatchEncounterDto = z.infer<typeof patchEncounterSchema>;
 export type ListEncountersQuery = z.infer<typeof listEncountersQuerySchema>;

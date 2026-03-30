@@ -237,7 +237,8 @@ router.get('/:id/encounters', asyncHandler(async (req: Request, res: Response) =
   // Query encounters by patientId and clinicId, sorted by createdAt descending
   const filter = { 
     patientId: req.params.id,
-    clinicId: req.user!.clinicId 
+    clinicId: req.user!.clinicId,
+    isActive: true
   };
 
   const result = await paginate(EncounterModel, filter, page, limit, { createdAt: -1 });
