@@ -1,14 +1,13 @@
 'use client';
 
-import { useQueries } from '@tanstack/react-query';
-import Link from 'next/link';
-import { PageWrapper, PageHeader, Button } from '@/components/ui';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { RecentTable } from '@/components/dashboard/RecentTable';
+import { useQueries } from '@tanstack/react-query'
+import Link from 'next/link'
+import { PageWrapper, PageHeader, Button } from '@/components/ui'
+import { StatCard } from '@/components/dashboard/StatCard'
+import { RecentTable } from '@/components/dashboard/RecentTable'
+import { API_URL } from '@/lib/api'
 
-import { API_BASE } from '@/lib/api';
-
-const API = API_BASE;
+const API = `${API_URL}/api/v1`
 
 async function fetchDashboard() {
   const res = await fetch(`${API}/dashboard`);

@@ -1,10 +1,11 @@
 'use client';
 
-import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { type Patient, formatDate } from '@health-watchers/types';
-import { ErrorMessage } from '@/components/ui';
-import { API_BASE } from '@/lib/api';
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { type Patient, formatDate } from "@health-watchers/types";
+import { ErrorMessage } from "@/components/ui";
+import { queryKeys } from "@/lib/queryKeys";
+import { API_URL } from "@/lib/api";
 
 interface Encounter {
   _id: string;
@@ -36,8 +37,8 @@ export default function PatientDetailClient({
   } = useQuery({
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/patients/${patientId}`);
-      if (!res.ok) throw new Error('Failed to load patient');
+      const res = await fetch(`${API_URL}/api/v1/patients/${patientId}`);
+      if (!res.ok) throw new Error("Failed to load patient");
       const data = await res.json();
       return data.data;
     },
@@ -50,8 +51,8 @@ export default function PatientDetailClient({
   } = useQuery({
     queryKey: queryKeys.encounters.byPatient(patientId),
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/encounters/patient/${patientId}`);
-      if (!res.ok) throw new Error('Failed to load encounters');
+      const res = await fetch(`${API_URL}/api/v1/encounters/patient/${patientId}`);
+      if (!res.ok) throw new Error("Failed to load encounters");
       const data = await res.json();
       return data.data || [];
     },

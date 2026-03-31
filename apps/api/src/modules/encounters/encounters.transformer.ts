@@ -15,6 +15,7 @@ export interface EncounterResponse {
   prescriptions?: Prescription[];
   followUpDate?: string;
   aiSummary?: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +35,7 @@ export function toEncounterResponse(doc: Document & Record<string, any>): Encoun
     prescriptions:     doc.prescriptions,
     followUpDate:      doc.followUpDate instanceof Date ? doc.followUpDate.toISOString() : doc.followUpDate,
     aiSummary:         doc.aiSummary,
+    isActive:          doc.isActive !== undefined ? doc.isActive : true,
     createdAt:         doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt,
     updatedAt:         doc.updatedAt instanceof Date ? doc.updatedAt.toISOString() : doc.updatedAt,
   };
