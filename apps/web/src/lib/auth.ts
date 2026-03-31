@@ -24,10 +24,7 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function fetchWithAuth(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   let res = await fetch(url, {
     ...options,
     credentials: 'include',

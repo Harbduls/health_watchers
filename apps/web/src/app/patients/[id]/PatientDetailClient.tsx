@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -23,8 +23,18 @@ interface Labels {
   noEncounters: string;
 }
 
-export default function PatientDetailClient({ patientId, labels }: { patientId: string; labels: Labels }) {
-  const { data: patient, isLoading: patientLoading, error: patientError } = useQuery({
+export default function PatientDetailClient({
+  patientId,
+  labels,
+}: {
+  patientId: string;
+  labels: Labels;
+}) {
+  const {
+    data: patient,
+    isLoading: patientLoading,
+    error: patientError,
+  } = useQuery({
     queryKey: queryKeys.patients.detail(patientId),
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/v1/patients/${patientId}`);
@@ -34,7 +44,11 @@ export default function PatientDetailClient({ patientId, labels }: { patientId: 
     },
   });
 
-  const { data: encounters = [], isLoading: encountersLoading, error: encountersError } = useQuery({
+  const {
+    data: encounters = [],
+    isLoading: encountersLoading,
+    error: encountersError,
+  } = useQuery({
     queryKey: queryKeys.encounters.byPatient(patientId),
     queryFn: async () => {
       const res = await fetch(`${API_URL}/api/v1/encounters/patient/${patientId}`);
@@ -52,7 +66,12 @@ export default function PatientDetailClient({ patientId, labels }: { patientId: 
   }
 
   if (error || !patient) {
-    return <ErrorMessage message={error instanceof Error ? error.message : labels.error} onRetry={() => window.location.reload()} />;
+    return (
+      <ErrorMessage
+        message={error instanceof Error ? error.message : labels.error}
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   return (
@@ -62,7 +81,9 @@ export default function PatientDetailClient({ patientId, labels }: { patientId: 
       </Link>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{patient.firstName} {patient.lastName}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          {patient.firstName} {patient.lastName}
+        </h1>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           <div>
             <p className="text-xs text-gray-500 uppercase font-semibold">System ID</p>
