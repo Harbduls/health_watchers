@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { authenticate, requireRole } from '@api/middlewares/auth.middleware';
+import { authenticate, requireRoles } from '@api/middlewares/auth.middleware';
 import { exportRateLimit } from '@api/middlewares/export-rate-limit.middleware';
 import { createAuditLog } from '@api/modules/audit/audit.service';
 import {
@@ -102,7 +102,7 @@ router.get(
 router.get(
   '/clinics/:id/export',
   authenticate,
-  requireRole('SUPER_ADMIN'),
+  requireRoles('SUPER_ADMIN'),
   exportRateLimit,
   async (req: Request, res: Response) => {
     const { id } = req.params;
